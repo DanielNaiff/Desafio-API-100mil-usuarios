@@ -2,10 +2,7 @@ package spring.boot.deasfioAPI.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import spring.boot.deasfioAPI.model.User;
 import spring.boot.deasfioAPI.repository.UserRepository;
 import spring.boot.deasfioAPI.service.AnalysisService;
@@ -37,8 +34,17 @@ public class UserController {
         return ResponseEntity.ok(analysisService.topCountrys());
     }
 
-    @GetMapping("/top-countries")
-    public ResponseEntity<?> topCountries(){
-        return ResponseEntity.ok(analysisService.topCountrys());
+    @GetMapping("/team-insights")
+    public ResponseEntity<?> teamInsight(){
+        return ok(analysisService.teamInsights());
+    }
+
+    @GetMapping("/active-users-per-day")
+    public ResponseEntity<?> logins(@RequestParam(defaultValue = "0") int min){
+        return ok(analysisService.logPerDay(min));
+    }
+
+    public ResponseEntity<?> ok(Object dados){
+        return ResponseEntity.ok(Map.of("data", dados));
     }
 }

@@ -14,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -34,22 +35,36 @@ public class AnalysisService {
                 .toList();
     }
 
-    public List<TeamInsight> teamInsights(){
+    public List<TeamInsight> teamInsights() {
         return userRepository.findAll().parallelStream()
                 .collect(Collectors.groupingBy(u -> u.getTeam().getName()))
                 .entrySet().stream()
-                .map(e ->{
-                    var users = e.getValue();
+                .map(entry -> {
+                    var users = entry.getValue();
                     int members = users.size();
-                    int leaders = (int) users.stream().filter(u -> u.getTeam().isLeader()).count();
-                    int completed = users.stream().flatMap(u -> u.getTeam().getProject().stream())
-                            .mapToInt(p -> p.isCompleted() ? 1: 0).sum();
-                    int active = (int)users.stream().filter(User::isActive).count();
-                    double percente = members == 0 ? 0 : active * 100.0/members;
+                    int leaders = (int) users.stream()
+                            .filter(u -> u.getTeam().isLeader())
+                            .count();
 
-                    return new TeamInsight(e.getKey(), members, leaders, completed, percente);
-                }).toList();
+                    int completed = users.stream()
+                            .flatMap(u -> {
+                                var projetos = u.getTeam().getProject();
+                                return projetos != null ? projetos.stream() : Stream.empty();
+                            })
+                            .mapToInt(p -> p.isCompleted() ? 1 : 0)
+                            .sum();
+
+                    int active = (int) users.stream()
+                            .filter(User::isActive)
+                            .count();
+
+                    double percent = members == 0 ? 0 : active * 100.0 / members;
+
+                    return new TeamInsight(entry.getKey(), members, leaders, completed, percent);
+                })
+                .toList();
     }
+
 
     public Map<LocalDate, Long> logPerDay(int min) {
         return userRepository.findAll()
