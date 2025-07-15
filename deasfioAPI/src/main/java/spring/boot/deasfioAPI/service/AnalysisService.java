@@ -3,6 +3,7 @@ package spring.boot.deasfioAPI.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import spring.boot.deasfioAPI.model.Log;
 import spring.boot.deasfioAPI.model.TeamInsight;
 import spring.boot.deasfioAPI.model.User;
 import spring.boot.deasfioAPI.repository.UserRepository;
@@ -50,14 +51,24 @@ public class AnalysisService {
                 }).toList();
     }
 
-    public Map<LocalDate, Long> logPerDay(int min){
-        return userRepository.findAll().parallelStream()
-                .flatMap(u -> u.getLogs().stream())
-                .filter(l -> "login".equalsIgnoreCase(l.getAction()))
-                .collect(Collectors.groupingBy(AcessLog::getDate, Collectors.counting()))
-                .entrySet().stream()
-                .filter(e -> e.getValue() >= min)
-                .sorted(Map.Entry.comparingByKey())
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a, LinkedHashMap::new));
+    public Map<LocalDate, Long> logPerDay(int min) {
+        return userRepository.findAll()
+                .parallelStream() // processa usuários em paralelo
+                .flatMap(u -> u.getLogs().stream()) // junta todos os logs de todos os usuários
+                .filter(l -> "login".equalsIgnoreCase(l.getAction())) // filtra só ações de login
+                .collect(Collectors.groupingBy(
+                        Log::getDate, // agrupa por data
+                        Collectors.counting() // conta quantos por data
+                ))
+                .entrySet().stream() // transforma em stream para poder filtrar e ordenar
+                .filter(e -> e.getValue() >= min) // aplica filtro de mínimo (se for 3000, só dias com >=3000 logins)
+                .sorted(Map.Entry.comparingByKey()) // ordena por data (a chave)
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (a, b) -> a,
+                        LinkedHashMap::new // preserva a ordem de inserção
+                ));
     }
+
 }
