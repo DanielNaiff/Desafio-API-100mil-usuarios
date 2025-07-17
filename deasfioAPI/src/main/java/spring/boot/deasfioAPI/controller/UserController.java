@@ -7,8 +7,10 @@ import spring.boot.deasfioAPI.model.User;
 import spring.boot.deasfioAPI.repository.UserRepository;
 import spring.boot.deasfioAPI.service.AnalysisService;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 @RestController
 @RequiredArgsConstructor
@@ -17,34 +19,47 @@ public class UserController {
     private final UserRepository userRepository;
     private final AnalysisService analysisService;
 
+    private <T> Map<String, Object> timed(Supplier<T> supplier){
+        long start = System.currentTimeMillis();
+        T data = supplier.get();
+        long exec = System.currentTimeMillis() - start;
+        return Map.of("timestamp", Instant.now(),
+                "execution_time_ms", exec,
+                "data", data);
+    }
     @PostMapping("/users")
-    public ResponseEntity<?> load(@RequestBody List<User> users){
-        userRepository.saveAll(users);
+    public Map<String, Object> load(@RequestBody List<User> users){
 
-        return ResponseEntity.ok(Map.of("message", "Arquivo recebido com sucesso", "user_count", userRepository.findAll().size()));
+        return timed(() -> {
+            userRepository.saveAll(users);
+            return Map.of(
+                    "mensagem", "Arquivo recebido com sucesso",
+                    "total_usuario", userRepository.findAll().size()
+            );
+                }
+
+        );
+
     }
 
     @GetMapping("/superusers")
-    public ResponseEntity<?> superUsers(){
-        return ResponseEntity.ok(analysisService.superUsers());
+    public  Map<String, Object>  superUsers(){
+        return timed(analysisService::superUsers);
     }
 
     @GetMapping("/top-countries")
-    public ResponseEntity<?> topCountries(){
-        return ResponseEntity.ok(analysisService.topCountrys());
+    public  Map<String, Object>  topCountries(){
+        return timed(analysisService::topCountrys);
     }
 
     @GetMapping("/team-insights")
-    public ResponseEntity<?> teamInsight(){
-        return ok(analysisService.teamInsights());
+    public  Map<String, Object>  teamInsight(){
+        return timed(analysisService::teamInsights);
     }
 
     @GetMapping("/active-users-per-day")
-    public ResponseEntity<?> logins(@RequestParam(defaultValue = "0") int min){
-        return ok(analysisService.logPerDay(min));
+    public Map<String, Object> logins(@RequestParam(defaultValue = "0") int min){
+        return timed(() -> analysisService.logPerDay(min));
     }
 
-    public ResponseEntity<?> ok(Object dados){
-        return ResponseEntity.ok(Map.of("data", dados));
-    }
 }

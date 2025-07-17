@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.LinkedHashMap;
@@ -13,7 +14,12 @@ import java.util.Map;
 @RestController
 @RequiredArgsConstructor
 public class EvolutionController {
-    private final WebClient client = WebClient.create("http://localhost:8080");
+
+    ExchangeStrategies strategies = ExchangeStrategies.builder().codecs(cfg ->cfg.defaultCodecs().maxInMemorySize(16*1024*1024))
+            .build();
+    private final WebClient client = WebClient.builder().baseUrl("http://localhost:8080")
+            .exchangeStrategies(strategies)
+            .build();
 
     @GetMapping("/evaluation")
     public Map<String, Object> evaluate(){
